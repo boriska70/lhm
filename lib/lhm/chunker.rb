@@ -77,6 +77,7 @@ module Lhm
       [top ? top.to_i : @limit, @limit].min
     end
 
+
     def bottom
       @next_to_insert
     end
