@@ -11,12 +11,19 @@ module Lhm
 
     attr_reader :connection
 
-    # Copy from origin to destination in chunks of size `stride`. Sleeps for
-    # `throttle` milliseconds between each stride.
+    LOCK_WAIT_RETRIES = 10
+    RETRY_WAIT = 5
+
+    # Copy from origin to destination in chunks of size `stride`.
+    # Use the `throttler` class to sleep between each stride.
     def initialize(migration, connection = nil, options = {})
       @migration = migration
       @connection = connection
-      @throttler = options[:throttler]
+      @max_retries = options[:lock_wait_retries] || LOCK_WAIT_RETRIES
+      @sleep_duration = options[:retry_wait] || RETRY_WAIT
+      if @throttler = options[:throttler]
+        @throttler.connection = @connection if @throttler.respond_to?(:connection=)
+      end
       @start = options[:start] || select_start
       @limit = options[:limit] || select_limit
       @printer = options[:printer] || Printer::Percentage.new
@@ -25,24 +32,53 @@ module Lhm
     def execute
       return unless @start && @limit
       @next_to_insert = @start
-      while @next_to_insert < @limit || (@next_to_insert == 1 && @start == 1)
+      while @next_to_insert <= @limit # while @next_to_insert < @limit || (@next_to_insert == 1 && @start == 1)
         stride = @throttler.stride
-        affected_rows = @connection.update(copy(bottom, top(stride)))
-
+        top = upper_id(@next_to_insert, stride)
+        affected_rows = insert(copy(bottom, top))  # affected_rows = @connection.update(copy(bottom, top(stride)))
         if @throttler && affected_rows > 0
           @throttler.run
         end
 
-        @printer.notify(bottom, @limit)
-        @next_to_insert = top(stride) + 1
+        #@printer.notify(bottom, @limit)
+        @printer.notify_detailed(bottom, top, @limit, affected_rows)
+        @next_to_insert = top + 1
+        break if @start == @limit
       end
       @printer.end
     end
 
-  private
+    private
+
+    def insert(insert_statement)
+      with_retry { @connection.update(insert_statement) }
+    end
+
+    def with_retry
+      begin
+        retries ||= 0
+        yield
+      rescue StandardError => e
+        # Deadlocks: 'Deadlock found when trying to get lock'
+        # Lock wait timeouts: 'Lock wait timeout exceeded'
+        if e.message =~ /Lock wait timeout exceeded|Deadlock found when trying to get lock/ && retries < @max_retries
+          retries += 1
+          Lhm.logger.info("#{e} - retrying #{retries} time(s) in the chunker")
+          Kernel.sleep @sleep_duration
+          retry
+        else
+          raise e
+        end
+      end
+    end
 
     def bottom
       @next_to_insert
+    end
+
+    def upper_id(next_id, stride)
+      top = connection.select_value("select id from `#{ origin_name }` where id >= #{ next_id } order by id limit 1 offset #{ stride - 1}")
+      [top ? top.to_i : @limit, @limit].min
     end
 
     def top(stride)
@@ -76,9 +112,9 @@ module Lhm
     def conditions
       if @migration.conditions
         @migration.conditions.
-          sub(/\)\Z/, '').
-          # put any where conditions in parens
-          sub(/where\s(\w.*)\Z/, 'where (\\1)') + ' and'
+            sub(/\)\Z/, '').
+            # put any where conditions in parens
+            sub(/where\s(\w.*)\Z/, 'where (\\1)') + ' and'
       else
         'where'
       end
