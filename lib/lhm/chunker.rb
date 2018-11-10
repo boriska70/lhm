@@ -32,18 +32,18 @@ module Lhm
     def execute
       return unless @start && @limit
       @next_to_insert = @start
-      while @next_to_insert <= @limit # while @next_to_insert < @limit || (@next_to_insert == 1 && @start == 1)
+      while @next_to_insert <= @limit
+        puts "\nNext is #{@next_to_insert}"
         stride = @throttler.stride
         top = upper_id(@next_to_insert, stride)
-        affected_rows = insert(copy(bottom, top))  # affected_rows = @connection.update(copy(bottom, top(stride)))
+        affected_rows = insert(copy(bottom, top))
         if @throttler && affected_rows > 0
           @throttler.run
         end
-
-        #@printer.notify(bottom, @limit)
         @printer.notify_detailed(bottom, top, @limit, affected_rows)
         @next_to_insert = top + 1
-        break if @start == @limit
+        puts "\nNew next is #{@next_to_insert}"
+        puts "\nLimit is #{@limit}"
       end
       @printer.end
     end
