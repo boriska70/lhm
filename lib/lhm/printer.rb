@@ -24,6 +24,12 @@ module Lhm
         write(message)
       end
 
+      def notify_detailed(bottom, top, limit, affected)
+        return if !top || top == 0
+        message = "%.2f%% (from #{bottom} to #{top}) completed, %d ids left up to #{limit}, affected rows:  %s" % [(bottom.to_f / top.to_f * 100.0),(limit.to_f-top.to_f), affected]
+        write(message)
+      end
+
       def end
         write('100% complete')
         @output.write "\n"
