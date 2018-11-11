@@ -33,17 +33,17 @@ module Lhm
       return unless @start && @limit
       @next_to_insert = @start
       while @next_to_insert <= @limit
-        puts "\nNext is #{@next_to_insert}"
+        start_utc = Time.now.utc
         stride = @throttler.stride
         top = upper_id(@next_to_insert, stride)
+        Lhm.logger.info("Next to insert is #{@next_to_insert}, top is #{top}")
         affected_rows = insert(copy(bottom, top))
         if @throttler && affected_rows > 0
           @throttler.run
         end
-        @printer.notify_detailed(bottom, top, @limit, affected_rows)
+        Lhm.logger.info(@printer.notify_detailed(bottom, top, @limit, affected_rows)) {"Duration: #{Time.now.utc - start_utc} seconds"}
         @next_to_insert = top + 1
-        puts "\nNew next is #{@next_to_insert}"
-        puts "\nLimit is #{@limit}"
+        Lhm.logger.info("Next to insert moved to #{@next_to_insert}, the limit is #{@limit}")
       end
       @printer.end
     end
