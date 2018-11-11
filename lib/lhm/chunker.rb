@@ -38,10 +38,10 @@ module Lhm
         top = upper_id(@next_to_insert, stride)
         Lhm.logger.info("Next to insert is #{@next_to_insert}, top is #{top}")
         affected_rows = insert(copy(bottom, top))
+        Lhm.logger.info(@printer.notify_detailed(bottom, top, @limit, affected_rows)) {"Duration: #{Time.now.utc - start_utc} seconds"}
         if @throttler && affected_rows > 0
           @throttler.run
         end
-        Lhm.logger.info(@printer.notify_detailed(bottom, top, @limit, affected_rows)) {"Duration: #{Time.now.utc - start_utc} seconds"}
         @next_to_insert = top + 1
         Lhm.logger.info("Next to insert moved to #{@next_to_insert}, the limit is #{@limit}")
       end
