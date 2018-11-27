@@ -2,7 +2,7 @@ require 'lhm/throttler/time'
 
 module Lhm
   module Throttler
-    CLASSES = { :time_throttler => Throttler::Time }
+    CLASSES = { :time_throttler => Throttler::Time, :dynamic_time_throttler => Throttler::DynamicTime }
 
     def throttler
       @throttler ||= Throttler::Time.new

@@ -3,8 +3,8 @@ module Lhm
     class Time
       include Command
 
-      DEFAULT_TIMEOUT = 0.1
-      DEFAULT_STRIDE = 40_000
+      DEFAULT_TIMEOUT = 2
+      DEFAULT_STRIDE = 1000
 
       attr_accessor :timeout_seconds
       attr_accessor :stride
