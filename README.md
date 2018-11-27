@@ -24,6 +24,14 @@ looking around for third party solutions, we decided to create our
 own. We called it Large Hadron Migrator, and it is a gem for online
 ActiveRecord and DataMapper migrations.
 
+Current version is based on v.2.2.0 of https://github.com/soundcloud/lhm  
+Heavily used ideas of https://github.com/royra/lhm  
+Main changes:
+- retries on deadlock (10 times every 5 seconds)
+- dynamic configuration of Throttler (see Dynamic Throttler section below)
+- more verbose logging
+
+
 ![LHC](http://farm4.static.flickr.com/3093/2844971993_17f2ddf2a8_z.jpg)
 
 [The Large Hadron collider at CERN](http://en.wikipedia.org/wiki/Large_Hadron_Collider)
