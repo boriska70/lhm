@@ -13,6 +13,7 @@ module Lhm
 
     LOCK_WAIT_RETRIES = 10
     RETRY_WAIT = 5
+    VERBOSE = false
 
     # Copy from origin to destination in chunks of size `stride`.
     # Use the `throttler` class to sleep between each stride.
@@ -21,6 +22,7 @@ module Lhm
       @connection = connection
       @max_retries = options[:lock_wait_retries] || LOCK_WAIT_RETRIES
       @sleep_duration = options[:retry_wait] || RETRY_WAIT
+      @verbose = options[:verbose] || VERBOSE
       if @throttler = options[:throttler]
         @throttler.connection = @connection if @throttler.respond_to?(:connection=)
       end
@@ -36,14 +38,15 @@ module Lhm
         start_utc = Time.now.utc
         stride = @throttler.stride
         top = upper_id(@next_to_insert, stride)
-        Lhm.logger.info("Next to insert is #{@next_to_insert}, top is #{top}")
+        Lhm.logger.info("Next to insert is #{@next_to_insert}, top is #{top}") if @verbose
         affected_rows = insert(copy(bottom, top))
-        Lhm.logger.info(@printer.notify_detailed(bottom, top, @limit, affected_rows)) {"Duration: #{Time.now.utc - start_utc} seconds"}
+        Lhm.logger.info(@printer.notify_detailed(bottom, top, @limit, affected_rows)) {"Duration: #{Time.now.utc - start_utc} seconds"} if @verbose
         if @throttler && affected_rows > 0
           @throttler.run
         end
+        @printer.notify(bottom, @limit)
         @next_to_insert = top + 1
-        Lhm.logger.info("Next to insert moved to #{@next_to_insert}, the limit is #{@limit}")
+        Lhm.logger.info("Next to insert moved to #{@next_to_insert}, the limit is #{@limit}") if @verbose
       end
       @printer.end
     end
