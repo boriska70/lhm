@@ -12,7 +12,9 @@ module Lhm
       attr_accessor :timeout_seconds
       attr_accessor :stride
 
-      def initialize(filename = '/tmp/lhm_dynamic_time.json')
+      def initialize(stride, sleep, filename = '/tmp/lhm_dynamic_time.json')
+        @stride = stride || DEFAULT_STRIDE
+        @timeout_seconds = sleep || DEFAULT_TIMEOUT
         @filename = filename
         update_config
       end
@@ -29,7 +31,7 @@ module Lhm
         rescue Exception => e
           Lhm.logger.error "error reading file #{@filename}: #{e}"
           {}
-        end.reverse_merge({delay: DEFAULT_TIMEOUT, stride: DEFAULT_STRIDE})
+        end.reverse_merge({delay: @timeout_seconds, stride: @stride})
       end
 
       def update_config

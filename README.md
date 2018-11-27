@@ -156,6 +156,28 @@ Lhm.change_table :users, throttler: my_throttler  do |m|
 end
 ```
 
+### Dynamic Throttler
+
+Using dynamic_time instead of time
+```
+my_throttler = Lhm::Throttler::DynamicTime.new(stride, delay)
+
+Lhm.change_table :users, throttler: my_throttler  do |m|
+  #
+end
+```
+allows to modify stride and sleep dynamically during the run.
+The configuration should be stored in JSON file
+```
+{
+  "delay": 1,
+  "stride": 200
+}
+```
+and Throttler reads it every iteration.
+By default the file name is /tmp/lhm_dynamic_time.json
+Can be set to any name; it should be passed as a 3rd parameter to DynamicTime.new in this case
+
 ## Table rename strategies
 
 There are two different table rename strategies available: LockedSwitcher and

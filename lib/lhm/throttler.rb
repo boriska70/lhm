@@ -1,4 +1,5 @@
 require 'lhm/throttler/time'
+require 'lhm/throttler/dynamic_time'
 
 module Lhm
   module Throttler
